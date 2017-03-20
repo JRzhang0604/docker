@@ -1,0 +1,72 @@
+version: "2"
+
+services:
+### console
+    console:
+        build:
+            context: ./images/console
+            args:
+                - USERPASS=www-data
+                - GIT_NAME=zhangyuchao
+                - GIT_EMAIL=824520413@qq.com
+                - INSTALL_YARN=false
+        volumes:
+            - ./.ssh/:/home/www-data/.ssh/
+        volumes_from:
+            - php-fpm
+            - nginx
+            - mysql
+            - redis
+        extra_hosts:
+            # IMPORTANT: Replace with your Docker Host IP (will be appended to /etc/hosts)
+            - "api.4000669696.com:172.18.0.5"
+        links:
+            - redis
+            - mysql
+        tty: true
+
+### php-fpm
+    php-fpm:
+        build: ./images/php-fpm
+        volumes:
+            - ../:/var/www/
+            - ./data/storage/:/data/laravel/storage/
+        extra_hosts:
+            # IMPORTANT: Replace with your Docker Host IP (will be appended to /etc/hosts)
+            - "api.4000669696.com:172.18.0.5"
+
+### nginx
+    nginx:
+        build:
+            context: ./images/nginx
+            dockerfile: Dockerfile
+        ports:
+             - "80:80"
+             - "443:443"
+        depends_on:
+            - php-fpm
+        volumes_from:
+            - php-fpm
+        volumes:
+            - ./log/nginx/:/var/log/nginx/
+            - ./images/nginx/sites:/etc/nginx/conf.d/
+        links:
+            - php-fpm
+
+### mysql
+    mysql:
+        build: ./images/mysql
+        environment:
+            MYSQL_DATABASE: weiyuyan
+            MYSQL_USER: zhangyuchao
+            MYSQL_PASSWORD: zhangyuchao
+            MYSQL_ROOT_PASSWORD: root
+        volumes:
+            - ./data/mysql:/var/lib/mysql
+        ports:
+            - "3306:3306"
+### redis
+    redis:
+        build: ./images/redis
+        ports:
+            - "6379:6379"
